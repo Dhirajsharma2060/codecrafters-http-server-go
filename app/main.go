@@ -54,7 +54,7 @@ func main() {
 				conn.Write([]byte(response))
 
 			} else {
-				response := "HTTP/1.1 404 NOT FOUND\r\n\r\n"
+				response := "HTTP/1.1 404 Not Found\r\n\r\n"
 				// If the path is not '/', a 404 response is sent
 				conn.Write([]byte(response))
 			}
