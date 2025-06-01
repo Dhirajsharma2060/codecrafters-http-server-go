@@ -83,7 +83,7 @@ func main() {
 			} else if strings.HasPrefix(path, "/user-agent") {
 				body := userAgent
 				response := "HTTP/1.1 200 OK\r\n" +
-					"Content-Tyle:text/plain\r\n" +
+					"Content-Type:text/plain\r\n" +
 					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
 					"\r\n" +
 					body
