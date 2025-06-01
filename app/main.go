@@ -41,6 +41,18 @@ func main() {
 	lines := strings.Split(request, "\r\n")
 	if len(lines) > 0 {
 		parts := strings.Split(lines[0], " ")
+
+		userAgent := ""
+		for _, line := range lines {
+			if strings.HasPrefix(line, "User-Agent: ") {
+				// If the line starts with "User-Agent: ", we extract the user agent string
+				userAgent = strings.TrimPrefix(line, "User-Agent: ")
+				// TrimPrefix removes the "User-Agent: " part from the line
+				// and leaves us with just the user agent string
+				break
+			}
+		}
+
 		if len(parts) >= 2 {
 			// GET / HTTP/1.1\r\n
 			// Host: localhost\r\n
@@ -68,6 +80,14 @@ func main() {
 					"\r\n" +
 					body
 				conn.Write([]byte(reponse))
+			} else if strings.HasPrefix(path, "/user-agent") {
+				body := userAgent
+				response := "HTTP/1.1 200 OK\r\n" +
+					"Content-Tyle:text/plain\r\n" +
+					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+					"\r\n" +
+					body
+				conn.Write([]byte(response))
 			} else {
 				response := "HTTP/1.1 404 Not Found\r\n\r\n"
 				// If the path is not '/', a 404 response is sent
