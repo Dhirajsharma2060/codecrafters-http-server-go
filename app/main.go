@@ -53,6 +53,21 @@ func main() {
 				response := "HTTP/1.1 200 OK\r\n\r\n"
 				conn.Write([]byte(response))
 
+			} else if strings.HasPrefix(path, "/echo/") {
+				// If the path starts with /echo/, we extract the message
+				echoStr := path[len("/echo/"):]
+				//GET /echo/abc HTTP/1.1\r\nHost: localhost\r\n\r\n
+				//the HasPrefix function checks if the path starts with "/echo/"
+				// then we extract the message by slicing the path from the length of "/echo/" to the end
+				// in above example it will be abc
+				// We then create a response with the message
+				body := echoStr
+				reponse := "HTTP/1.1 200 OK\r\n" +
+					"Content-Type: text/plain\r\n" +
+					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+					"\r\n" +
+					body
+				conn.Write([]byte(reponse))
 			} else {
 				response := "HTTP/1.1 404 Not Found\r\n\r\n"
 				// If the path is not '/', a 404 response is sent
