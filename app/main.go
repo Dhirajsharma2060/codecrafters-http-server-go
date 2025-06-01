@@ -22,10 +22,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = l.Accept()
+	conn, err := l.Accept()
 	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
+		fmt.Println("Error while waiting for and accepting a connection: ", err.Error())
 		os.Exit(1)
 	}
+	//defer is the keyword which is used to ensure that the connection is closed just before the function returns
+	defer conn.Close()
+
+	response := "HTTP/1.1 200 OK\r\n\r\n"
+
+	conn.Write([]byte(response))
 
 }
