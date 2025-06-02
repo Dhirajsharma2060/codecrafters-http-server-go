@@ -100,6 +100,22 @@ func handleConnection(conn net.Conn) {
 					"\r\n" +
 					body
 				conn.Write([]byte(response))
+			} else if strings.HasPrefix(path, "/file/") {
+				bodyContent, err := os.ReadFile(strings.TrimPrefix(path, "/file/"))
+				if err != nil {
+					// If the file does not exist, we send a 404 response
+					response := "HTTP/1.1 404 Not Found\r\n\r\n"
+					conn.Write([]byte(response))
+					return
+				}
+				body := string(bodyContent)
+				response := "HTTP/1.1 200 OK\r\n" +
+					"Content-Type: application/octet-stream\r\n" +
+					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+					"\r\n" +
+					body
+				conn.Write([]byte(response))
+
 			} else {
 				response := "HTTP/1.1 404 Not Found\r\n\r\n"
 				// If the path is not '/', a 404 response is sent
