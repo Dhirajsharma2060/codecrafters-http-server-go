@@ -100,8 +100,8 @@ func handleConnection(conn net.Conn) {
 					"\r\n" +
 					body
 				conn.Write([]byte(response))
-			} else if strings.HasPrefix(path, "/file/") {
-				bodyContent, err := os.ReadFile(strings.TrimPrefix(path, "/file/"))
+			} else if strings.HasPrefix(path, "/files/") {
+				bodyContent, err := os.ReadFile(strings.TrimPrefix(path, "/files/"))
 				if err != nil {
 					// If the file does not exist, we send a 404 response
 					response := "HTTP/1.1 404 Not Found\r\n\r\n"
