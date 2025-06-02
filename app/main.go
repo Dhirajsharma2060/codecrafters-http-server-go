@@ -8,7 +8,6 @@ import (
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports above (feel free to remove this!)
-var _ = net.Listen
 var _ = os.Exit
 
 func main() {
@@ -20,19 +19,32 @@ func main() {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
+	// The net.Listen function is used to create a TCP listener on port 4221
+	fmt.Println("Listening on port 4221...")
+	// The Accept method waits for and accepts a connection on the listener
+	// The Accept method returns a net.Conn object which represents the connection
+	// The net.Conn object can be used to read from and write to the connection
+	// The for loop is used to continuously accept connections
+	// The handleConnection function is called in a goroutine to handle each connection concurrently
+	// The handleConnection function is defined below to handle the connection
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error while waiting for and accepting a connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error while waiting for and accepting a connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)
+		//defer is the keyword which is used to ensure that the connection is closed just before the function returns
+		// defer conn.Close()
 	}
-	//defer is the keyword which is used to ensure that the connection is closed just before the function returns
-	defer conn.Close()
 
-	// This reads the request from the client and stores it in a buffer
-	// The `make` function is used to create a byte slice of size 1024 bytes (1 KB).
+}
+
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
 	buf := make([]byte, 1024)
-	_, err = conn.Read(buf)
+	_, err := conn.Read(buf)
 	if err != nil {
 		fmt.Println("Error reading from connection:", err.Error())
 		os.Exit(1)
@@ -74,12 +86,12 @@ func main() {
 				// in above example it will be abc
 				// We then create a response with the message
 				body := echoStr
-				reponse := "HTTP/1.1 200 OK\r\n" +
+				response := "HTTP/1.1 200 OK\r\n" +
 					"Content-Type: text/plain\r\n" +
 					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
 					"\r\n" +
 					body
-				conn.Write([]byte(reponse))
+				conn.Write([]byte(response))
 			} else if strings.HasPrefix(path, "/user-agent") {
 				body := userAgent
 				response := "HTTP/1.1 200 OK\r\n" +
@@ -95,6 +107,5 @@ func main() {
 			}
 		}
 	}
-	// You can add more logic here to check the request and set response accordingly
 
 }
