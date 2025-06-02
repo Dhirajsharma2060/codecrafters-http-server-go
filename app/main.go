@@ -11,6 +11,17 @@ import (
 var _ = os.Exit
 
 func main() {
+
+	//Parse --directory flag
+	directory := "."
+	args := os.Args
+	for i, arg := range args {
+		if arg == "--directory" && i+1 < len(args) {
+			directory = args[i+1]
+			// If the --directory flag is provided, we set the directory variable to the next argument
+			// This allows us to change the directory where the server will look for files
+		}
+	}
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
@@ -34,14 +45,14 @@ func main() {
 			fmt.Println("Error while waiting for and accepting a connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, directory)
 		//defer is the keyword which is used to ensure that the connection is closed just before the function returns
 		// defer conn.Close()
 	}
 
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, directory string) {
 	defer conn.Close()
 	buf := make([]byte, 1024)
 	_, err := conn.Read(buf)
@@ -101,7 +112,8 @@ func handleConnection(conn net.Conn) {
 					body
 				conn.Write([]byte(response))
 			} else if strings.HasPrefix(path, "/files/") {
-				bodyContent, err := os.ReadFile(strings.TrimPrefix(path, "/files/"))
+				filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
+				bodyContent, err := os.ReadFile(filepath)
 				if err != nil {
 					// If the file does not exist, we send a 404 response
 					response := "HTTP/1.1 404 Not Found\r\n\r\n"
