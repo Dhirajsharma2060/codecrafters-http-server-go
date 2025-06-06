@@ -49,7 +49,6 @@ func main() {
 		//defer is the keyword which is used to ensure that the connection is closed just before the function returns
 		// defer conn.Close()
 	}
-
 }
 
 func handleConnection(conn net.Conn, directory string) {
