@@ -60,7 +60,12 @@ func handleConnection(conn net.Conn, directory string) {
 		fmt.Println("Error reading from connection:", err.Error())
 		os.Exit(1)
 	}
-	request := string(buf)
+	n, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println("Error reading from connection:", err.Error())
+		os.Exit(1)
+	}
+	request := string(buf[:n])
 	lines := strings.Split(request, "\r\n")
 	if len(lines) > 0 {
 		parts := strings.Split(lines[0], " ")
