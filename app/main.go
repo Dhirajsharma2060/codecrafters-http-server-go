@@ -174,7 +174,7 @@ func handleConnection(conn net.Conn, directory string) {
 						return
 					}
 					// If the file is written successfully, we send a 200 OK response
-					response := "HTTP/1.1 201 OK\r\n\r\n"
+					response := "HTTP/1.1 201 Created\r\n\r\n"
 					conn.Write([]byte(response))
 				} else {
 					// If the path does not start with /files/, we send a 404 Not Found response
