@@ -55,11 +55,14 @@ func main() {
 func handleConnection(conn net.Conn, directory string) {
 	defer conn.Close()
 	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err.Error())
-		os.Exit(1)
-	}
+	//note : whenver using this buffer of staic size, we need to ensure that the request is not larger than the buffer size
+	// We create a buffer of 1024 bytes to read the request from the connection
+	//this could also means we will be adding the etc zeros as well toa avoid the in request we only parse the read only [:n ] only
+	// _, err := conn.Read(buf)
+	// if err != nil {
+	// 	fmt.Println("Error reading from connection:", err.Error())
+	// 	os.Exit(1)
+	// }
 	n, err := conn.Read(buf)
 	if err != nil {
 		fmt.Println("Error reading from connection:", err.Error())
