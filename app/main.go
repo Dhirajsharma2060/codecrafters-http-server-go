@@ -97,29 +97,6 @@ func handleConnection(conn net.Conn, directory string) {
 					response := "HTTP/1.1 200 OK\r\n\r\n"
 					conn.Write([]byte(response))
 
-				} else if strings.HasPrefix(path, "/echo/") {
-					// If the path starts with /echo/, we extract the message
-					echoStr := path[len("/echo/"):]
-					//GET /echo/abc HTTP/1.1\r\nHost: localhost\r\n\r\n
-					//the HasPrefix function checks if the path starts with "/echo/"
-					// then we extract the message by slicing the path from the length of "/echo/" to the end
-					// in above example it will be abc
-					// We then create a response with the message
-					body := echoStr
-					response := "HTTP/1.1 200 OK\r\n" +
-						"Content-Type: text/plain\r\n" +
-						fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-						"\r\n" +
-						body
-					conn.Write([]byte(response))
-				} else if strings.HasPrefix(path, "/user-agent") {
-					body := userAgent
-					response := "HTTP/1.1 200 OK\r\n" +
-						"Content-Type:text/plain\r\n" +
-						fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-						"\r\n" +
-						body
-					conn.Write([]byte(response))
 				} else if strings.HasPrefix(path, "Accept_Encoding") {
 					if strings.HasPrefix(path, "gzip") && strings.HasPrefix(path, "./echo/") {
 						echoStr := path[len("/echo/"):]
@@ -127,6 +104,29 @@ func handleConnection(conn net.Conn, directory string) {
 						response := "HTTP/1.1 200 OK\r\n" +
 							"Content-Encoding: gzip\r\n" +
 							"Content-Type: text/plain\r\n" +
+							fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+							"\r\n" +
+							body
+						conn.Write([]byte(response))
+					} else if strings.HasPrefix(path, "/echo/") {
+						// If the path starts with /echo/, we extract the message
+						echoStr := path[len("/echo/"):]
+						//GET /echo/abc HTTP/1.1\r\nHost: localhost\r\n\r\n
+						//the HasPrefix function checks if the path starts with "/echo/"
+						// then we extract the message by slicing the path from the length of "/echo/" to the end
+						// in above example it will be abc
+						// We then create a response with the message
+						body := echoStr
+						response := "HTTP/1.1 200 OK\r\n" +
+							"Content-Type: text/plain\r\n" +
+							fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+							"\r\n" +
+							body
+						conn.Write([]byte(response))
+					} else if strings.HasPrefix(path, "/user-agent") {
+						body := userAgent
+						response := "HTTP/1.1 200 OK\r\n" +
+							"Content-Type:text/plain\r\n" +
 							fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
 							"\r\n" +
 							body
