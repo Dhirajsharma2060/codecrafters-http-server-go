@@ -120,6 +120,22 @@ func handleConnection(conn net.Conn, directory string) {
 						"\r\n" +
 						body
 					conn.Write([]byte(response))
+				} else if strings.HasPrefix(path, "Accept_Encoding") {
+					if strings.HasPrefix(path, "gzip") && strings.HasPrefix(path, "./echo/") {
+						echoStr := path[len("/echo/"):]
+						body := echoStr
+						response := "HTTP/1.1 200 OK\r\n" +
+							"Content-Encoding: gzip\r\n" +
+							"Content-Type: text/plain\r\n" +
+							fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+							"\r\n" +
+							body
+						conn.Write([]byte(response))
+					} else {
+						response := "HTTP/1.1 200 OK\r\n" +
+							"Content-Type: text/plain\r\n"
+						conn.Write([]byte(response))
+					}
 				} else if strings.HasPrefix(path, "/files/") {
 					filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
 					bodyContent, err := os.ReadFile(filepath)
