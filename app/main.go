@@ -40,132 +40,145 @@ func main() {
 
 func handleConnection(conn net.Conn, directory string) {
 	defer conn.Close()
-	buf := make([]byte, 1024)
+	buf := make([]byte, 4096) // 🔥 Changed: Increased buffer size to handle larger requests
 
-	n, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err.Error())
-		return
-	}
+	for { // 🔥 Changed: Wrap in loop to support persistent connections
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("Error reading from connection:", err.Error())
+			return
+		}
+		if n == 0 {
+			continue
+		}
 
-	request := string(buf[:n])
-	lines := strings.Split(request, "\r\n")
+		request := string(buf[:n])
+		lines := strings.Split(request, "\r\n")
 
-	if len(lines) > 0 {
+		if len(lines) == 0 {
+			continue
+		}
+
 		parts := strings.Split(lines[0], " ")
+		if len(parts) < 3 {
+			continue
+		}
+
+		method := parts[0]
+		path := parts[1]
 
 		// Extract headers
 		userAgent := ""
 		acceptEncoding := ""
+		connectionHeader := "" // 🔥 New: Track connection type
+
 		for _, line := range lines {
 			if strings.HasPrefix(line, "User-Agent: ") {
 				userAgent = strings.TrimPrefix(line, "User-Agent: ")
 			} else if strings.HasPrefix(line, "Accept-Encoding: ") {
 				acceptEncoding = strings.TrimPrefix(line, "Accept-Encoding: ")
+			} else if strings.HasPrefix(line, "Connection: ") { // 🔥 New
+				connectionHeader = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(line, "Connection: ")))
 			}
 		}
 
-		if len(parts) >= 3 {
-			method := parts[0]
-			path := parts[1]
+		if method == "GET" {
+			if path == "/" {
+				response := "HTTP/1.1 200 OK\r\n\r\n"
+				conn.Write([]byte(response))
 
-			if method == "GET" {
-				if path == "/" {
-					response := "HTTP/1.1 200 OK\r\n\r\n"
+			} else if strings.HasPrefix(path, "/echo/") {
+				echoStr := path[len("/echo/"):]
+				body := echoStr
+
+				if strings.Contains(acceptEncoding, "gzip") {
+					var b bytes.Buffer
+					gz := gzip.NewWriter(&b)
+					gz.Write([]byte(body))
+					gz.Close()
+
+					response := "HTTP/1.1 200 OK\r\n" +
+						"Content-Type: text/plain\r\n" +
+						"Content-Encoding: gzip\r\n" +
+						fmt.Sprintf("Content-Length: %d\r\n", b.Len()) +
+						"\r\n"
 					conn.Write([]byte(response))
-
-				} else if strings.HasPrefix(path, "/echo/") {
-					echoStr := path[len("/echo/"):]
-					body := echoStr
-
-					if strings.Contains(acceptEncoding, "gzip") {
-						// Compress the body with gzip
-						var b bytes.Buffer
-						gz := gzip.NewWriter(&b)
-						gz.Write([]byte(body))
-						gz.Close()
-
-						response := "HTTP/1.1 200 OK\r\n" +
-							"Content-Type: text/plain\r\n" +
-							"Content-Encoding: gzip\r\n" +
-							fmt.Sprintf("Content-Length: %d\r\n", b.Len()) +
-							"\r\n"
-						conn.Write([]byte(response))
-						conn.Write(b.Bytes()) // Write compressed data as bytes
-					} else {
-						response := "HTTP/1.1 200 OK\r\n" +
-							"Content-Type: text/plain\r\n" +
-							fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-							"\r\n" +
-							body
-						conn.Write([]byte(response))
-					}
-
-				} else if strings.HasPrefix(path, "/user-agent") {
-					body := userAgent
+					conn.Write(b.Bytes())
+				} else {
 					response := "HTTP/1.1 200 OK\r\n" +
 						"Content-Type: text/plain\r\n" +
 						fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
 						"\r\n" +
 						body
 					conn.Write([]byte(response))
-
-				} else if strings.HasPrefix(path, "/files/") {
-					filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
-					bodyContent, err := os.ReadFile(filepath)
-					if err != nil {
-						response := "HTTP/1.1 404 Not Found\r\n\r\n"
-						conn.Write([]byte(response))
-						return
-					}
-					body := string(bodyContent)
-					response := "HTTP/1.1 200 OK\r\n" +
-						"Content-Type: application/octet-stream\r\n" +
-						fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-						"\r\n" +
-						body
-					conn.Write([]byte(response))
-
-				} else {
-					response := "HTTP/1.1 404 Not Found\r\n\r\n"
-					conn.Write([]byte(response))
 				}
 
-			} else if method == "POST" {
-				if strings.HasPrefix(path, "/files/") {
-					filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
+			} else if strings.HasPrefix(path, "/user-agent") {
+				body := userAgent
+				response := "HTTP/1.1 200 OK\r\n" +
+					"Content-Type: text/plain\r\n" +
+					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+					"\r\n" +
+					body
+				conn.Write([]byte(response))
 
-					// Find the end of headers in the raw request
-					headerEnd := strings.Index(request, "\r\n\r\n")
-					if headerEnd == -1 {
-						response := "HTTP/1.1 400 Bad Request\r\n\r\n"
-						conn.Write([]byte(response))
-						return
-					}
-
-					// Extract body from raw buffer (not from split lines)
-					bodyStart := headerEnd + 4
-					body := buf[bodyStart:n]
-
-					err := os.WriteFile(filepath, body, 0644)
-					if err != nil {
-						response := "HTTP/1.1 500 Internal Server Error\r\n\r\n"
-						conn.Write([]byte(response))
-						return
-					}
-
-					response := "HTTP/1.1 201 Created\r\n\r\n"
-					conn.Write([]byte(response))
-
-				} else {
+			} else if strings.HasPrefix(path, "/files/") {
+				filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
+				bodyContent, err := os.ReadFile(filepath)
+				if err != nil {
 					response := "HTTP/1.1 404 Not Found\r\n\r\n"
 					conn.Write([]byte(response))
+					continue
 				}
+				body := string(bodyContent)
+				response := "HTTP/1.1 200 OK\r\n" +
+					"Content-Type: application/octet-stream\r\n" +
+					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
+					"\r\n" +
+					body
+				conn.Write([]byte(response))
 
 			} else {
-				response := "HTTP/1.1 405 Method Not Allowed\r\n\r\n"
+				response := "HTTP/1.1 404 Not Found\r\n\r\n"
 				conn.Write([]byte(response))
 			}
+
+		} else if method == "POST" {
+			if strings.HasPrefix(path, "/files/") {
+				filepath := directory + "/" + strings.TrimPrefix(path, "/files/")
+
+				headerEnd := strings.Index(request, "\r\n\r\n")
+				if headerEnd == -1 {
+					response := "HTTP/1.1 400 Bad Request\r\n\r\n"
+					conn.Write([]byte(response))
+					continue
+				}
+
+				bodyStart := headerEnd + 4
+				body := buf[bodyStart:n]
+
+				err := os.WriteFile(filepath, body, 0644)
+				if err != nil {
+					response := "HTTP/1.1 500 Internal Server Error\r\n\r\n"
+					conn.Write([]byte(response))
+					continue
+				}
+
+				response := "HTTP/1.1 201 Created\r\n\r\n"
+				conn.Write([]byte(response))
+
+			} else {
+				response := "HTTP/1.1 404 Not Found\r\n\r\n"
+				conn.Write([]byte(response))
+			}
+
+		} else {
+			response := "HTTP/1.1 405 Method Not Allowed\r\n\r\n"
+			conn.Write([]byte(response))
+		}
+
+		if connectionHeader == "close" { // 🔥 New: Respect Connection: close
+			break
 		}
 	}
 }
