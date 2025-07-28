@@ -133,10 +133,11 @@ func handleConnection(conn net.Conn, directory string) {
 				}
 				body := string(bodyContent)
 				response := "HTTP/1.1 200 OK\r\n" +
-					"Content-Type: application/octet-stream\r\n" +
-					fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-					"\r\n" +
-					body
+					"Content-Type: application/octet-stream\r\n"
+				if connectionHeader == "close" {
+					response += "Connection: close\r\n"
+				}
+				response += fmt.Sprintf("Content-Length: %d\r\n\r\n", len(body)) + body
 				conn.Write([]byte(response))
 
 			} else {
