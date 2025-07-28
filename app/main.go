@@ -105,11 +105,12 @@ func handleConnection(conn net.Conn, directory string) {
 					conn.Write([]byte(response))
 					conn.Write(b.Bytes())
 				} else {
-					response := "HTTP/1.1 200 OK\r\n" +
-						"Content-Type: text/plain\r\n" +
-						fmt.Sprintf("Content-Length: %d\r\n", len(body)) +
-						"\r\n" +
-						body
+					headers := "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+					if connectionHeader == "close" {
+						headers += "Connection: close\r\n"
+					}
+					headers += fmt.Sprintf("Content-Length: %d\r\n\r\n", len(body))
+					response := headers + body
 					conn.Write([]byte(response))
 				}
 
